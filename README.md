@@ -40,3 +40,25 @@ python3 --version
 docker --version
 localstack --version
 awslocal --version
+
+# Start LocalStack
+docker-compose up
+
+
+# Deploy Everything in One Go
+All resources (S3, DynamoDB, Lambda, and API Gateway) can be created with one script.
+
+Run this:
+
+chmod +x setup_localstack.sh
+./setup_localstack.sh
+
+The script will:
+
+Create an S3 bucket and DynamoDB table
+
+Package and deploy the Lambda
+
+Create API Gateway routes
+
+Connect everything together

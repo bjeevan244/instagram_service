@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Starting LocalStack setup for Instagram Service..."
+echo "Starting LocalStack setup for Instagram Service..."
 
 # Configuration
 AWS_REGION="us-east-1"
@@ -15,11 +15,11 @@ export AWS_REGION=$AWS_REGION
 export AWS_DEFAULT_REGION=$AWS_REGION
 
 # Create S3 bucket
-echo "🪣 Creating S3 bucket..."
+echo "Creating S3 bucket..."
 awslocal s3 mb s3://$BUCKET_NAME || true
 
 # Create DynamoDB table
-echo "📄 Creating DynamoDB table..."
+echo "Creating DynamoDB table..."
 awslocal dynamodb create-table \
   --table-name $TABLE_NAME \
   --attribute-definitions AttributeName=imageId,AttributeType=S \
@@ -27,17 +27,17 @@ awslocal dynamodb create-table \
   --billing-mode PAY_PER_REQUEST || true
 
 # Package Lambda
-echo "📦 Packaging Lambda..."
+echo "Packaging Lambda..."
 cd app
 zip -r ../$ZIP_FILE . >/dev/null
 cd ..
 
 # Create or update Lambda function
 if awslocal lambda get-function --function-name $FUNCTION_NAME >/dev/null 2>&1; then
-  echo "♻️ Updating existing Lambda..."
+  echo "Updating existing Lambda..."
   awslocal lambda update-function-code --function-name $FUNCTION_NAME --zip-file fileb://$ZIP_FILE >/dev/null
 else
-  echo "🧠 Creating new Lambda..."
+  echo "Creating new Lambda..."
   awslocal lambda create-function \
     --function-name $FUNCTION_NAME \
     --runtime python3.9 \
@@ -47,7 +47,7 @@ else
 fi
 
 # Create API Gateway
-echo "🌐 Creating API Gateway..."
+echo "Creating API Gateway..."
 API_ID=$(awslocal apigateway create-rest-api --name "$API_NAME" --query 'id' --output text)
 ROOT_ID=$(awslocal apigateway get-resources --rest-api-id $API_ID --query 'items[0].id' --output text)
 LAMBDA_ARN=$(awslocal lambda list-functions --query "Functions[?FunctionName=='$FUNCTION_NAME'].FunctionArn" --output text)
@@ -91,8 +91,8 @@ awslocal apigateway put-integration --rest-api-id $API_ID --resource-id $DEL_PAR
 awslocal apigateway create-deployment --rest-api-id $API_ID --stage-name dev >/dev/null
 
 echo ""
-echo "✅ LocalStack setup complete!"
-echo "🌍 API Base URL: http://localhost:4566/_aws/execute-api/$API_ID/dev"
+echo "LocalStack setup complete!"
+echo "API Base URL: http://localhost:4566/_aws/execute-api/$API_ID/dev"
 echo ""
 echo "Try test upload:"
 echo "curl -X POST http://localhost:4566/_aws/execute-api/$API_ID/dev/upload -H 'Content-Type: application/json' -d '{\"userId\":\"u1\",\"tags\":[\"test\"],\"image\":\"'$(echo -n 'hello world' | base64)'\"}'"
