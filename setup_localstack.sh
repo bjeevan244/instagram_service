@@ -14,6 +14,14 @@ API_NAME="ImageServiceAPI"
 export AWS_REGION=$AWS_REGION
 export AWS_DEFAULT_REGION=$AWS_REGION
 
+# Delete old resources if they exist
+echo "Deleting old resources if they exist..."
+awslocal s3 rb s3://$BUCKET_NAME --force || true
+awslocal dynamodb delete-table --table-name $TABLE_NAME || true
+awslocal lambda delete-function --function-name $FUNCTION_NAME || true
+echo "Old resources deleted"
+
+
 # Create S3 bucket
 echo "Creating S3 bucket..."
 awslocal s3 mb s3://$BUCKET_NAME || true
@@ -90,9 +98,27 @@ awslocal apigateway put-integration --rest-api-id $API_ID --resource-id $DEL_PAR
 # Deploy API
 awslocal apigateway create-deployment --rest-api-id $API_ID --stage-name dev >/dev/null
 
+# Print endpoints
 echo ""
 echo "LocalStack setup complete!"
 echo "API Base URL: http://localhost:4566/_aws/execute-api/$API_ID/dev"
 echo ""
+EXAMPLE_IMAGE_ID="<imageId>"
+
 echo "Try test upload:"
-echo "curl -X POST http://localhost:4566/_aws/execute-api/$API_ID/dev/upload -H 'Content-Type: application/json' -d '{\"userId\":\"u1\",\"tags\":[\"test\"],\"image\":\"'$(echo -n 'hello world' | base64)'\"}'"
+echo "curl -X POST http://localhost:4566/_aws/execute-api/$API_ID/dev/upload \\"
+echo "  -H 'Content-Type: application/json' \\"
+echo "  -d '{\"userId\":\"u1\",\"tags\":[\"test\"],\"image\":\"'$(echo -n 'hello world' | base64)'\"}'"
+echo ""
+echo "List all images for a user:"
+echo "curl -X GET 'http://localhost:4566/_aws/execute-api/$API_ID/dev/list'"
+echo ""
+echo "List images filter:"
+echo "curl -X GET 'http://localhost:4566/_aws/execute-api/$API_ID/dev/list?userId=u1'"
+echo ""
+echo "View a specific image (replace <imageId> with actual id from upload response):"
+echo "curl -X GET 'http://localhost:4566/_aws/execute-api/$API_ID/dev/view/$EXAMPLE_IMAGE_ID'"
+echo ""
+echo "Delete a specific image (replace <imageId> with actual id from upload response):"
+echo "curl -X DELETE 'http://localhost:4566/_aws/execute-api/$API_ID/dev/delete/$EXAMPLE_IMAGE_ID'"
+echo ""

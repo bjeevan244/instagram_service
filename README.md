@@ -62,3 +62,75 @@ Package and deploy the Lambda
 Create API Gateway routes
 
 Connect everything together
+
+
+Example output:
+✅ LocalStack setup complete!
+🌍 API Base URL: http://localhost:4566/_aws/execute-api/ngwzal2kc8/dev
+
+
+# Test the API Endpoints
+Once the setup finishes, replace <your_api_id> with the one shown above and try the following requests:
+
+1️⃣ Upload an image:
+
+API_ID=<your_api_id>
+
+curl -X POST http://localhost:4566/_aws/execute-api/$API_ID/dev/upload \
+  -H "Content-Type: application/json" \
+  -d '{"userId": "u1", "tags": ["test"], "image": "'$(echo -n "hello world" | base64)'"}'
+
+Expected response:
+{"message": "Upload success", "imageId": "a2b7e7e1-9813-4f9b-8d6e-682f4bca0e1a"}
+
+2️⃣ List all images
+curl -X GET http://localhost:4566/_aws/execute-api/$API_ID/dev/list
+
+3️⃣ View one image
+IMAGE_ID=<image_id_from_upload>
+curl -X GET http://localhost:4566/_aws/execute-api/$API_ID/dev/view/$IMAGE_ID
+
+
+4️⃣ Delete an image
+curl -X DELETE http://localhost:4566/_aws/execute-api/$API_ID/dev/delete/$IMAGE_ID
+
+
+| Test                | Action              | Expected Result              |
+| ------------------- | ------------------- | ---------------------------- |
+| Upload valid data   | POST /upload        | Returns 200 with new imageId |
+| Upload invalid data | Missing body        | Returns error                |
+| List                | GET /list           | Returns list of images       |
+| View valid ID       | GET /view/{id}      | Returns metadata             |
+| Delete              | DELETE /delete/{id} | Deletes from S3 & DynamoDB   |
+
+
+Cleanup
+To stop everything:
+
+docker-compose down
+
+
+To clear all test data:
+
+awslocal s3 rb s3://images-bucket --force
+awslocal dynamodb delete-table --table-name images_metadata
+awslocal lambda delete-function --function-name imageService
+
+## Running Tests
+
+We use `pytest` to run unit tests and validate API routes and AWS client integrations.
+
+Run all tests:
+
+```bash
+pytest
+
+
+
+Notes
+
+The Lambda handler automatically routes between /upload, /list, /view, and /delete based on the request path.
+
+The LocalStack service simulates AWS completely offline — perfect for local testing or interviews.
+
+Everything runs in Docker; nothing touches your real AWS account.
